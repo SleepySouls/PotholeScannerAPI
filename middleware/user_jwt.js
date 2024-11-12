@@ -1,23 +1,29 @@
 const jwt = require('jsonwebtoken');
+const BlacklistedToken = require('../models/blacklistToken');
 
-module.exports = async function (req, res, next) {
-    const token = req.header("Authorization");
-    
-    if (!token) 
-        return res.status(401).json({success: false, message: "Access Denied"});
-
-    try {
-        await jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) {
-                return res.status(401).json({success: false, message: "Invalid Token"});
-            }
-            else{
-                req.user = decoded.user;
-                next();
-            }
+module.exports = async function(req, res, next) {
+    const token = req.header('Authorization');
+    if (!token) {
+        return res.status(401).json({
+            msg: 'No token, authorization denied'
         });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({success: false, message: "Server got error :(("});
     }
-}
+    try {
+        const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+        
+        // Check if the token is blacklisted
+        const blacklistedToken = await BlacklistedToken.findOne({ token: token.replace('Bearer ', '') });
+        if (blacklistedToken) {
+            return res.status(401).json({
+                msg: 'Token is no longer valid'
+            });
+        }
+
+        req.user = decoded.user;
+        next();
+    } catch (err) {
+        res.status(401).json({
+            msg: 'Token is not valid'
+        });
+    }
+};

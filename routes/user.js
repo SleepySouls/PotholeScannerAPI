@@ -4,9 +4,9 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const user_jwt = require("../middleware/user_jwt");
 const jwt = require("jsonwebtoken");
+const BlacklistedToken = require('../models/blacklistToken');
 
-
-
+// @route GET api/user/auth
 router.get("/auth", user_jwt, async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id).select("-password");
@@ -20,6 +20,7 @@ router.get("/auth", user_jwt, async (req, res, next) => {
     }
 })
 
+// @route POST api/user/register
 router.post("/register", async (req, res, next) => {
     const {username, email, phonenumber, password} = req.body;
     try {
@@ -59,6 +60,7 @@ router.post("/register", async (req, res, next) => {
     }
 });
 
+// @route POST api/user/login
 router.post("/login", async (req, res, next) => {
     const {email, password} = req.body;
     try {
@@ -86,6 +88,24 @@ router.post("/login", async (req, res, next) => {
                 message: "Logged in successfully",
                 token: token
             });
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// @route POST api/user/logout
+router.post("/logout", user_jwt, async (req, res, next) => {
+    try {
+        // Get the token from the request headers
+        const token = req.header('Authorization').replace('Bearer ', '');
+
+        // Add the token to the blacklist
+        await BlacklistedToken.create({ token });
+
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
         });
     } catch (error) {
         next(error);
