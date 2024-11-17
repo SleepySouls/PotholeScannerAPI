@@ -112,5 +112,49 @@ router.post("/logout", user_jwt, async (req, res, next) => {
     }
 });
 
+// @route POST api/user/changepassword
+router.post("/changepassword", async (req, res, next) => {
+    try {
+        const {newPassword, reEnterNewPassword} = req.body;
+        const user = await User.findById(req.user.id);
+        const isMatch = await bcrypt.compare(newPassword, reEnterNewPassword);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false, message: "Incorrect Password"
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        user.password = hashedPassword;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: "Password changed successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+// @route POST api/user/editprofile
+router.post("/editprofile", async (req, res, next) => {
+    try {
+        const {username, email, phonenumber, address} = req.body;
+        const user = await User.findById(req.user.id);
+        user.username = username;   
+        user.email = email;
+        user.phonenumber = phonenumber;
+        user.address = address;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: "Profile edited successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 
 module.exports = router;

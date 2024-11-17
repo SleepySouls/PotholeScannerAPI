@@ -11,7 +11,6 @@ module.exports = async function(req, res, next) {
     try {
         const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
         
-        // Check if the token is blacklisted
         const blacklistedToken = await BlacklistedToken.findOne({ token: token.replace('Bearer ', '') });
         if (blacklistedToken) {
             return res.status(401).json({
