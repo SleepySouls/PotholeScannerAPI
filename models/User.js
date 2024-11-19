@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { reset } = require("nodemon");
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -17,7 +18,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-
     // dob: {
     //     type: Date,
     //     required: true
