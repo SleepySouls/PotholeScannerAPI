@@ -14,7 +14,8 @@ dotenv.config({
 connectDB();
 
 
-app.use('/api/potholescanner', require('./routes/user'));
+app.use('/api/user', require('./routes/user'));
+app.use('/api/email', require('./routes/email'));
 
 app.listen(port, console.log(`Server started on port: ${port}`));
 

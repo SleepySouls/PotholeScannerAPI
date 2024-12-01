@@ -138,7 +138,6 @@ router.post("/changepassword", async (req, res, next) => {
     }
 });
 
-
 // @route POST api/user/editprofile
 router.post("/editprofile", async (req, res, next) => {
     try {
@@ -158,48 +157,27 @@ router.post("/editprofile", async (req, res, next) => {
     }
 });
 
-//NodeMailer setup
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASSWORD
-    }
-});
-
-
-// @route POST api/user/forgotpassword
-router.post("/forgotpassword", async (req, res, next) => {
-    const {email} = req.body;
+//route POST api/user/confirmcode
+router.post("/confirmcode", async (req, res, next) => {
+    const {resetCode} = req.body;
     try {
-        const user = await User.findOne({email : email});
-        if (!user) {
+        const reset = await Reset.findOne({resetCode: resetCode});
+        if (!reset) {
             return res.status(400).json({
-                success: false, message: "User does not exist"
+                success: false, 
+                message: "Invalid reset code"
             });
         }
-        const reset = new Reset({
-            email: email,
-            resetCode: Math.floor(Math.random() * 90000) + 10000,
-            resetCodeExpiry: new Date(Date.now() + 3600000),
-        });
-        await reset.save();
-        const mailOptions = {
-            from: process.env.EMAIL,
-            to: email,
-            subject: "Password Reset",
-            text: `Your password reset code is ${reset.resetCode}`
-        };
-        transporter.sendMail(mailOptions, (err, info) => {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log("Email sent: " + info.response);
-            }
-        });
+        if (reset.resetCodeExpiry < Date.now()) {
+            return res.status(400).json({
+                success: false, 
+                message: "Reset code has expired"
+            });
+        }
         res.status(200).json({
             success: true,
-            message: "Password reset code sent successfully"
+            message: "Reset code confirmed successfully",
+            email: reset.email  // Return the email associated with the reset code
         });
     } catch (error) {
         next(error);
@@ -207,28 +185,39 @@ router.post("/forgotpassword", async (req, res, next) => {
 });
 
 // @route POST api/user/resetpassword
-// router.post("/resetpassword", async (req, res, next) => {
-//     const {newPassword, reEnterNewPassword} = req.body;
-//     try {
-//         const isMatch = await bcrypt.compare(newPassword, reEnterNewPassword);
-//         if (!isMatch) {
-//             return res.status(400).json({
-//                 success: false, message: "Incorrect Password"
-//             });
-//         }
-//         const resetEmail = await Reset.findOne({email : email});
-//         const salt = await bcrypt.genSalt(10);
-//         const hashedPassword = await bcrypt.hash(newPassword, salt);
-//         const user = await User.findOne({email : email});
-//         user.password = hashedPassword;
-//         await user.save();
-//         res.status(200).json({
-//             success: true,
-//             message: "Password reset successfully"
-//         });
-//     } catch (error) {
-//         next(error);
-//     }
-// });
+router.post("/resetpassword", async (req, res, next) => {
+    const {email, newPassword, reEnterNewPassword} = req.body;
+    try {
+        if (newPassword !== reEnterNewPassword) {
+            return res.status(400).json({
+                success: false, 
+                message: "Passwords do not match"
+            });
+        }
+
+        const user = await User.findOne({email: email});
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        user.password = hashedPassword;
+        await user.save();
+
+        // Optionally, delete the reset code after successful password change
+        await Reset.deleteOne({email: email});
+   
+        res.status(200).json({
+            success: true,
+            message: "Password reset successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 module.exports = router;
