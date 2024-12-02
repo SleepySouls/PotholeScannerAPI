@@ -29,7 +29,7 @@ router.post("/resetpassword", async (req, res, next) => {
             });
         }
 
-        const resetCode = Math.floor(Math.random() * 900000) + 100000;
+        const resetCode = Math.floor(Math.random() * 90000) + 10000;
         
         const reset = new Reset({
             email: email,
