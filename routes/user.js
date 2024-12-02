@@ -5,7 +5,6 @@ const bcrypt = require("bcryptjs");
 const user_jwt = require("../middleware/user_jwt");
 const jwt = require("jsonwebtoken");
 const BlacklistedToken = require('../models/blacklistToken');
-const nodemailer = require("nodemailer");
 const Reset = require("../models/Reset");
 
 // @route GET api/user/auth
@@ -139,12 +138,13 @@ router.post("/changepassword", async (req, res, next) => {
 });
 
 // @route POST api/user/editprofile
-router.post("/editprofile", async (req, res, next) => {
+router.post("/editprofile", user_jwt, async (req, res, next) => {
     try {
-        const {username, email, phonenumber, address} = req.body;
+        const {username, email, dob, phonenumber, address} = req.body;
         const user = await User.findById(req.user.id);
         user.username = username;   
         user.email = email;
+        user.dob = dob;
         user.phonenumber = phonenumber;
         user.address = address;
         await user.save();
