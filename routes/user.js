@@ -114,11 +114,11 @@ router.post("/logout", user_jwt, async (req, res, next) => {
 });
 
 // @route POST api/user/changepassword
-router.post("/changepassword", async (req, res, next) => {
+router.post("/changepassword", user_jwt, async (req, res, next) => {
     try {
-        const {newPassword, reEnterNewPassword} = req.body;
+        const {oldPassword, newPassword} = req.body;
         const user = await User.findById(req.user.id);
-        const isMatch = await bcrypt.compare(newPassword, reEnterNewPassword);
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({
                 success: false, message: "Incorrect Password"
