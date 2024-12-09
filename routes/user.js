@@ -6,6 +6,7 @@ const user_jwt = require("../middleware/user_jwt");
 const jwt = require("jsonwebtoken");
 const BlacklistedToken = require('../models/blacklistToken');
 const Reset = require("../models/Reset");
+const Feedback = require("../models/feedback");
 
 // @route GET api/user/auth
 router.get("/auth", user_jwt, async (req, res, next) => {
@@ -214,6 +215,26 @@ router.post("/resetpassword", async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: "Password reset successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// @route POST api/user/feedback
+router.post("/feedback", user_jwt, async (req, res, next) => {
+    const {username, email, satisfy, message} = req.body;
+    try {
+        const feedback = new Feedback({
+            username,
+            email,
+            satisfy,
+            message
+        });
+        await feedback.save();
+        res.status(200).json({
+            success: true,
+            message: "Feedback submitted successfully"
         });
     } catch (error) {
         next(error);
